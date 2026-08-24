@@ -13,6 +13,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
   mysql:
     image: mysql:8.4
     container_name: mysql
@@ -30,6 +31,24 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  spark_etl:
+    build:
+      context: .
+      dockerfile: dockerfile
+    container_name: spark_etl
+    depends_on:
+      cassandra:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+    env_file:
+      - .env
+    volumes:
+      - ./app:/app
+    ports:
+      - "4040:4040"
+
   grafana:
     image: grafana/grafana:latest
     container_name: grafana

@@ -13,9 +13,6 @@ import os
 #Load environment variables
 load_dotenv()
 
-os.environ["PYSPARK_PYTHON"] = r"C:\Users\PC\miniconda3\envs\recruitment\python.exe"
-os.environ["PYSPARK_DRIVER_PYTHON"] = r"C:\Users\PC\miniconda3\envs\recruitment\python.exe"
-
 #Configuartion
 CASSANDRA_KEYSPACE = os.getenv("CASSANDRA_KEYSPACE")
 CASSANDRA_TABLE = os.getenv("CASSANDRA_TABLE")
@@ -24,7 +21,7 @@ MYSQL_DATABASE =os.getenv("MYSQL_DATABASE")
 MYSQL_TARGET_TABLE = os.getenv("MYSQL_TARGET_TABLE")
 
 JDBC_PROPERTIES ={
-    "url": f"jdbc:mysql://mysql/{MYSQL_DATABASE}?connectionTimeZone=Asia/Ho_Chi_Minh&forceConnectionTimeZoneToSession=true",
+    "url": f"jdbc:mysql://mysql/{MYSQL_DATABASE}",
     "driver": "com.mysql.cj.jdbc.Driver",
     "user": os.getenv("MYSQL_USER"),
     "password": os.getenv("MYSQL_PASSWORD")
@@ -33,7 +30,7 @@ JDBC_PROPERTIES ={
 print("MYSQL_DATABASE =", MYSQL_DATABASE)
 print("JDBC_URL =", JDBC_PROPERTIES["url"])
 print("MYSQL_USER =", JDBC_PROPERTIES["user"])
-print("MYSQL_PASSWORD =", JDBC_PROPERTIES["password"])
+
 
 # @udf(returnType=TimestampType())
 # def timeuuid_todatetime(uuid_str):
@@ -54,7 +51,6 @@ def create_spark_session():
     return(
         SparkSession.builder
         .appName("Cassandra to MYSQL ELT Pipeline")
-        .config("spark.sql.session.timeZone", "Asia/Ho_Chi_Minh")
         .config("spark.jars.packages", f"{cassandra_connector},{mysql_connnector}")
         .config("spark.cassandra.connection.host", "cassandra")
         .getOrCreate()
