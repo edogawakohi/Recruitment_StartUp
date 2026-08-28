@@ -18,14 +18,16 @@ load_dotenv()
 #Disable warnings pandas to cleaner output
 warnings.filterwarnings('ignore')
 
-#CONFIGURATION
-HOST_IP = 'localhost'
-MYSQL_PORT = 3307
+CASSANDRA_HOST = 'cassandra'
+CASSANDRA_PORT = 9042
+
+MYSQL_HOST = 'mysql'
+MYSQL_PORT = 3306
 MYSQL_DB = os.getenv("MYSQL_DATABASE")
 MYSQL_USER = os.getenv("MYSQL_USER")
 MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD")
 
-print(f"Using MySQL: {MYSQL_USER}@{HOST_IP}:{MYSQL_PORT}/{MYSQL_DB}")
+print(f"Using MySQL: {MYSQL_USER}@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DB}")
 
 CASSANDRA_KEYSPACE = os.getenv("CASSANDRA_KEYSPACE")
 #DATA SCENATIOS (create fake data):
@@ -43,14 +45,14 @@ PUBLISHER_SCENARIOS = {
 
 #CONNECTORS
 def get_cassandra_connection():
-    "Connect to Cassandra database"
-    cluster = Cluster([HOST_IP])
+    """Connect to Cassandra database"""
+    cluster = Cluster([CASSANDRA_HOST], port=CASSANDRA_PORT)
     return cluster.connect(CASSANDRA_KEYSPACE)
 
 def get_mysql_connection():
     "Connect to MySQL database"
     return mysql.connector.connect(
-        host=HOST_IP,
+        host=MYSQL_HOST,
         port=MYSQL_PORT,
         user=MYSQL_USER,
         password=MYSQL_PASSWORD,
