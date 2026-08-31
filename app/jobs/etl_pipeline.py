@@ -45,7 +45,7 @@ print("MYSQL_USER =", JDBC_PROPERTIES["user"])
 def create_spark_session():
     """Initialize and returns a SparkSession"""
     # Connector need to match your Spark's Scala version
-    cassandra_connector = "com.datastax.spark:spark-cassandra-connector_2.12:3.4.1"
+    cassandra_connector = "com.datastax.spark:spark-cassandra-connector_2.13:3.5.1"
     mysql_connnector = "mysql:mysql-connector-java:8.0.33"
 
     return(
@@ -72,14 +72,14 @@ def extract_from_cassandra(spark, keyspace, table, last_processed_time):
         .load()
     )
 
-    df_with_ts = raw_df.withColumn('ts', col('created_at')- F.expr("INTERVAL 7 HOURS"))
+    df_with_ts = raw_df.withColumn('ts', col('created_at'))
 
     filtered_df = df_with_ts.where(
         F.col("ts") > last_processed_time
     )
  
     #2. Transform 'create_time' to "ts" (creates the second "temp table")
-    df_with_ts = raw_df.withColumn('ts', col('created_at') - F.expr("INTERVAL 7 HOURS"))
+    df_with_ts = raw_df.withColumn('ts', col('created_at'))
 
     #3.Filter (compare) using the new 'ts' (creates the second "temp table")
     print(f"Filtering for data newer than: {last_processed_time}")
@@ -238,18 +238,6 @@ def etl_flow(spark, new_data_df):
         print("--- Sample Processed Data (New Data Only) ---")
         processed_data.show(5)
 
-        # max_ts = processed_data.select(
-        # F.date_format(
-        #     F.max("ts"),
-        #     "yyyy-MM-dd HH:mm:ss"
-        # ).alias("max_ts")
-        #  ).collect()[0]["max_ts"]
-
-        # if max_ts:
-        #     updated_at_timestamp = datetime.strptime(
-        #         max_ts,
-        #         "%Y-%m-%d %H:%M:%S"
-        # )
         
         # Get max timestamp *from the new data*
         max_ts = processed_data.agg(F.max('ts')).collect()[0][0]

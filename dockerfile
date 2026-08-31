@@ -1,27 +1,30 @@
-# 1. Use the official Spark image (Pre-built with Spark 3.4.1, Java, and Python)
-FROM apache/spark:3.4.1-python3
+# ============================================================
+# Spark ETL - Spark 4.0.1 / Scala 2.13 / Java 17 / Python 3
+# ============================================================
 
-# 2. Switch to root user to install dependencies
+FROM apache/spark:4.0.1-scala2.13-java17-python3-ubuntu
+
+# ------------------------------------------------------------
+# 1. Root user for installing Python dependencies
+# ------------------------------------------------------------
 USER root
 
-# 3. Set working directory
 WORKDIR /app
 
-# 4. Copy requirements and install Python dependencies
-# We assume requirements.txt contains: cassandra-driver
+# ------------------------------------------------------------
+# 2. Install Python dependencies
+# ------------------------------------------------------------
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
 
-# 5. OPTIONAL BUT RECOMMENDED: Pre-download the connector JARs
-# This prevents the script from downloading them every time it runs.
-# We run a dummy command to trigger the download into the ~/.ivy2/cache
-RUN /opt/spark/bin/spark-submit \
-    --packages com.datastax.spark:spark-cassandra-connector_2.12:3.4.1,mysql:mysql-connector-java:8.0.33 \
-    --class org.apache.spark.examples.SparkPi \
-    /opt/spark/examples/jars/spark-examples_2.12-3.4.1.jar 1 > /dev/null 2>&1 || true
+RUN pip3 install --no-cache-dir -r requirements.txt
 
-# 6. Copy your ETL script
+# ------------------------------------------------------------
+# 3. Copy application
+# ------------------------------------------------------------
 COPY app /app
 
-# 7. Set the entrypoint
+# ------------------------------------------------------------
+# 4. Run ETL pipeline
+# ------------------------------------------------------------
 CMD ["python3", "/app/jobs/etl_pipeline.py"]
+

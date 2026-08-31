@@ -18,11 +18,11 @@ load_dotenv()
 #Disable warnings pandas to cleaner output
 warnings.filterwarnings('ignore')
 
-CASSANDRA_HOST = 'cassandra'
+CASSANDRA_HOST = 'localhost'
 CASSANDRA_PORT = 9042
 
-MYSQL_HOST = 'mysql'
-MYSQL_PORT = 3306
+MYSQL_HOST = 'localhost'
+MYSQL_PORT = 3307
 MYSQL_DB = os.getenv("MYSQL_DATABASE")
 MYSQL_USER = os.getenv("MYSQL_USER")
 MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD")
