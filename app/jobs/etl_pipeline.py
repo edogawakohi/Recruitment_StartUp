@@ -8,7 +8,7 @@ from uuid import UUID
 import sys
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
-import os
+import os               
 
 #Load environment variables
 load_dotenv()
@@ -21,7 +21,7 @@ MYSQL_DATABASE =os.getenv("MYSQL_DATABASE")
 MYSQL_TARGET_TABLE = os.getenv("MYSQL_TARGET_TABLE")
 
 JDBC_PROPERTIES ={
-    "url": f"jdbc:mysql://mysql/{MYSQL_DATABASE}",
+    "url": f"jdbc:mysql://localhost:3307/{MYSQL_DATABASE}",
     "driver": "com.mysql.cj.jdbc.Driver",
     "user": os.getenv("MYSQL_USER"),
     "password": os.getenv("MYSQL_PASSWORD")
@@ -52,7 +52,7 @@ def create_spark_session():
         SparkSession.builder
         .appName("Cassandra to MYSQL ELT Pipeline")
         .config("spark.jars.packages", f"{cassandra_connector},{mysql_connnector}")
-        .config("spark.cassandra.connection.host", "cassandra")
+        .config("spark.cassandra.connection.host", "localhost")
         .getOrCreate()
     )
 
@@ -63,8 +63,6 @@ def extract_from_cassandra(spark, keyspace, table, last_processed_time):
     """
     print(f"Extracting data from Cassandra keyspace: {keyspace}, table: {table}")
 
-    #1. Load All data from Cassandra (creates the first "temp table")
-    spark.conf.set("spark.sql.session.timeZone", "Asia/Ho_Chi_Minh")
     
     raw_df = (
         spark.read.format("org.apache.spark.sql.cassandra")
@@ -100,14 +98,8 @@ def extract_from_mysql(spark, jdbc_props, query):
     )
 
 def process_data(df):
-    """
-    Converts the TimeUUID column to a standard timestamp and selects
-    the necessary columns for transformation.
-    """
-    print("Processing raw data: Converting TimeUUID...")
-
     # The UDF is now global, so we just call it
-    df_with_ts = df.withColumn('ts', col('created_at')- F.expr("INTERVAL 7 HOURS"))
+    df_with_ts = df.withColumn('ts', col('created_at'))
 
     # Select only the columns needed for the next step
     return df_with_ts.select(
@@ -200,8 +192,6 @@ def get_mysql_latest_time(spark, jdbc_props):
         .option("dbtable", sql) \
         .option("user", jdbc_props["user"]) \
         .option("password", jdbc_props["password"]) \
-        .option("connectionTimeZone", "Asia/Ho_Chi_Minh") \
-        .option("forceConnectionTimeZoneToSession", "true") \
         .load()
     
     mysql_time = mysql_time_df.take(1)[0][0]
