@@ -21,6 +21,8 @@ jobs:
 
             git pull origin main
 
+            docker compose up -d mysql cassandra
+
             docker compose build spark_etl
 
             docker compose up -d spark_etl
