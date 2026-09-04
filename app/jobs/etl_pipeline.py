@@ -21,7 +21,7 @@ MYSQL_DATABASE =os.getenv("MYSQL_DATABASE")
 MYSQL_TARGET_TABLE = os.getenv("MYSQL_TARGET_TABLE")
 
 JDBC_PROPERTIES ={
-    "url": f"jdbc:mysql://localhost:3307/{MYSQL_DATABASE}",
+    "url": f"jdbc:mysql://mysql/{MYSQL_DATABASE}",
     "driver": "com.mysql.cj.jdbc.Driver",
     "user": os.getenv("MYSQL_USER"),
     "password": os.getenv("MYSQL_PASSWORD")
@@ -52,7 +52,7 @@ def create_spark_session():
         SparkSession.builder
         .appName("Cassandra to MYSQL ELT Pipeline")
         .config("spark.jars.packages", f"{cassandra_connector},{mysql_connnector}")
-        .config("spark.cassandra.connection.host", "localhost")
+        .config("spark.cassandra.connection.host", "cassandra")
         .getOrCreate()
     )
 
