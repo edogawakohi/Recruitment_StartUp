@@ -1,0 +1,18 @@
+FROM confluentinc/cp-kafka-connect:7.4.0
+
+USER root
+
+RUN yum install -y unzip wget
+
+RUN mkdir -p /usr/share/confluent-hub-components/cassandra-source
+
+RUN wget -q https://github.com/lensesio/stream-reactor/releases/download/8.0.0/kafka-connect-cassandra-8.0.0.zip -P /tmp/
+
+RUN unzip -j /tmp/kafka-connect-cassandra-8.0.0.zip "*.jar" \
+    -d /usr/share/confluent-hub-components/cassandra-source/
+
+RUN chown -R appuser:appuser /usr/share/confluent-hub-components/
+
+RUN rm /tmp/kafka-connect-cassandra-8.0.0.zip
+
+USER appuser
