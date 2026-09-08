@@ -4,3 +4,4 @@ mysql-connector-python
 python-dotenv
 pytest==8.3.5
 pandas<3.0
+kafka-python
