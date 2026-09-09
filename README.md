@@ -118,3 +118,102 @@ FROM recruitment_startup.events
 WHERE 
   $__timeFilter(updated_at)
 ```
+**Total Applications**
+```bash
+SELECT COALESCE(SUM(conversion),0) as "Total Applications"
+FROM recruitment_startup.events
+WHERE $__timeFilter(updated_at) 
+```
+**Total Spend**
+```bash
+SELECT 
+  COALESCE(SUM(spend_hour), 0) as "Total Spend"
+FROM events
+WHERE 
+  $__timeFilter(updated_at) 
+```
+**2. Hourly Trends - Time Series Analysis**
+**Create view in MySQL**
+```bash
+CREATE VIEW view_hourly_trend AS
+SELECT 
+    TIMESTAMP(CONCAT(dates, ' ', hours, ':00:00')) as metric_time,
+    updated_at, 
+    SUM(clicks) as traffic_volume,
+    SUM(conversion) as application_volume
+FROM events
+GROUP BY 1, 2;
+```
+**Grafana Query:**
+```bash
+SELECT 
+    metric_time as time,
+    traffic_volume,
+    application_volume
+FROM view_hourly_trend
+WHERE $__timeFilter(updated_at)
+ORDER BY metric_time
+```
+**3. Marketing ROI - Cost Efficiency Analysis** 
+Color-coded analysis identifying efficient (green) versus expensive (red) marketing channels based on Cost Per Qualified Lead (CPQL).
+**Create view in MySQL**
+```bash
+CREATE VIEW view_marketing_roi AS
+SELECT 
+    p.publisher_name,
+    e.publisher_id,
+    e.dates,
+    SUM(e.spend_hour) as total_spend,
+    IF(SUM(e.clicks) > 0, SUM(e.spend_hour) / SUM(e.clicks), 0) as cpc,
+    IF(SUM(e.conversion) > 0, SUM(e.spend_hour) / SUM(e.conversion), 0) as cpa,
+    IF(SUM(e.qualified_application) > 0, SUM(e.spend_hour) / SUM(e.qualified_application), 0) as cpql
+FROM events e
+LEFT JOIN master_publisher p ON e.publisher_id = p.id
+GROUP BY e.publisher_id, p.publisher_name, e.dates;
+```
+**Grafana Query:**
+```bash
+SELECT 
+    publisher_name,
+    total_spend,
+    cpc as "Cost Per Click",
+    cpa as "Cost Per Application",
+    cpql as "Cost Per Qualified Lead"
+FROM view_marketing_roi
+WHERE dates >= CURDATE() - INTERVAL 7 DAY
+ORDER BY cpql ASC
+```
+**4. Conversion Funnel - Job Performance**
+**Create view in MySQL**
+```bash
+CREATE VIEW view_job_funnel AS
+SELECT 
+    job_id,
+    dates,
+    SUM(clicks) as total_clicks,
+    SUM(conversion) as total_apps,
+    SUM(qualified_application) as total_qualified,
+    IF(SUM(clicks) > 0, (SUM(conversion) / SUM(clicks)) * 100, 0) as conversion_rate,
+    IF(SUM(conversion) > 0, (SUM(qualified_application) / SUM(conversion)) * 100, 0) as qualification_rate
+FROM events
+GROUP BY job_id, dates;
+```
+**Grafana Query:**
+```bash
+SELECT 
+    job_id,
+    total_clicks,
+    total_apps,
+    total_qualified,
+    conversion_rate,
+    qualification_rate
+FROM view_job_funnel
+WHERE dates >= CURDATE() - INTERVAL 7 DAY
+ORDER BY total_clicks DESC
+LIMIT 20
+```
+## Future Improvements
+Implement a Dead Letter Queue (DLQ) in Kafka for bad data
+
+
+
