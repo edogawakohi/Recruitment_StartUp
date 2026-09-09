@@ -4,6 +4,7 @@
   2. Phase two: The project evolved from a manual data collection architecture to a fully automated Change Data Collection (CDC) system using Kafka Connect, Apache   Kafka, and Spark Structured Streaming.
 
 ## OVERALL PIPELINE OVERVIEW
+# Phase 1: Near Real Time
 ![phase1](img/part_1.png)
 
 **1.Source(Cassandra):**  Stores raw event logs (e.g., user clicks on job postings) 
@@ -16,6 +17,7 @@
 
 **5.Deloy(EC2 AWS):** Production Environment 
 
+# Phase 2: Real Time Streaming with Kafka and Spark Streaming
 ![phase2](img/part2.png)
 **1. Source (Cassandra)**  
    Stores raw event logs, such as user clicks on job postings.
@@ -62,6 +64,57 @@
 ├── images/                    # Screenshots and documentation images
 └── README.md                  # Project documentation
 ```
+## Getting Started 
+# Prerequisites 
+- Docker and Docker Compose installed
+- Apache Spark installed (for local submission)
+- Python 3.x with pip
 
+# 1. Start the Infrastructure 
+Build the custom connector image and start all services: 
 
-   
+```bash
+sudo docker compose up -d #Deploy DBs
+sudo docker compose -f docker-compose-kafka.yml up -d --build
+```
+# 2. Deploy the Connector (CDC)
+Once Kafka Connect is running, submit the configuration to start watching Cassandra. This uses KCQL to query only new rows based on `create_time`:
+```bash
+curl -X POST http://localhost:8083/connectors -H "Content-Type: application/json" -d '{
+  "name": "lenses-cassandra-source",
+  "config": {
+    "connector.class": "io.lenses.streamreactor.connect.cassandra.source.CassandraSourceConnector",
+    "connect.cassandra.key.space": "recruitment_startup",
+    "connect.cassandra.contact.points": "localhost",
+    "connect.cassandra.port": "9042",
+    "connect.cassandra.username": "cassandra", 
+    "connect.cassandra.password": "cassandra",
+    "connect.cassandra.consistency.level": "ONE",
+    "connect.cassandra.import.mode": "incremental",
+    "connect.cassandra.poll.interval.ms": "1000",
+    "connect.cassandra.kcql": "INSERT INTO tracking_topic SELECT * FROM tracking PK create_time INCREMENTALMODE=TIMEUUID"
+  }
+}'
+```
+# 3. Start the Spark Streaming Job
+Run the PySpark job to listen to Kafka and aggregate data into MySQL:
+```bash
+spark-submit streaming_job.py
+```
+# 4. Trigger the Pipeline
+```bash
+python app/jobs/faking_data.py
+```
+## Real Time Dashboard 
+The project includes a Grafana dashboard connected to MySQL for real-time visualization of recruitment performance metrics.
+![dashboard](img/grafana.png)  
+# Dashboard Components
+**1. Executive Summary - KPI Metrics**
+**Total Clicks**
+```bash
+SELECT 
+  COALESCE(SUM(clicks), 0) as "Total Clicks"
+FROM recruitment_startup.events
+WHERE 
+  $__timeFilter(updated_at)
+```
